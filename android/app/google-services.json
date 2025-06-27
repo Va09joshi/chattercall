@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "566323536898",
+    "project_id": "chattercall-dd3c2",
+    "storage_bucket": "chattercall-dd3c2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:566323536898:android:ab81e0853e16f712f4331b",
+        "android_client_info": {
+          "package_name": "com.example.chat_application"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "566323536898-r9sj1s67mtv5hvhkqp6sdqepp9i0p10g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZVbGJDd7jNucZ5CPfkTw0054jqnmVCKM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "566323536898-r9sj1s67mtv5hvhkqp6sdqepp9i0p10g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

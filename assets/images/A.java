@@ -1,0 +1,1 @@
+Uidesign().customTextField(label: "Name", hinttext: "Enter Your name..", controller: namecontroller ,icon: Icons.drive_file_rename_outline )
