@@ -42,6 +42,7 @@
 ---
 
 ## 📁 Project Structure
+```
 chattercall/
 ├── lib/
 │   ├── auth/                  # Sign In, Sign Up, OTP screens
@@ -81,7 +82,7 @@ chattercall/
 
 
 --- 
-
+```
 ## 🛠️ Setup Instructions
 
 ### 1. Clone the repository
@@ -96,10 +97,14 @@ flutter pub get
 ```
 
 3. Configure Firebase
-
+```bash
+<ul>
 <li>Create a Firebase project</li>
 <li>Add google-services.json and GoogleService-Info.plist</li>
 <li>Enable Authentication (Phone/Email) and Firestore</li>
+</ul>
+
+```
 
 4. Run the app
 ```bash
@@ -114,7 +119,9 @@ flutter run -d android     # for mobile
 <li>📊 Call logs and history</li>
 <li>📱 iOS compatibility & iPad layout</li>
 
+
 <h3>🤝 Contributing</h3>
+
 1. Fork the repo
 
 2. Create a branch (feature/your-feature)
