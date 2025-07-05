@@ -42,15 +42,43 @@
 ---
 
 ## 📁 Project Structure
+chattercall/
 ├── lib/
-│ ├── auth/ # Sign in / Sign up / OTP screens
-│ ├── pages/ # Home, Call, Profile
-│ ├── models/ # Usermodel, Firebase helpers
-│ ├── video_call/ # WebRTC logic and UI
-│ └── main.dart
-├── assets/ # Images, logos, etc.
-├── pubspec.yaml
-└── README.md
+│   ├── auth/                  # Sign In, Sign Up, OTP screens
+│   │   ├── signin.dart
+│   │   ├── signup.dart
+│   │   └── otp_verification.dart
+│
+│   ├── models/                # Data models and Firebase helper functions
+│   │   ├── usermodel.dart
+│   │   └── firebase_helper.dart
+│
+│   ├── pages/                 # Main application screens
+│   │   ├── mainpage/          # Bottom navigation tabs (Home, Map, Jobs, Wallet)
+│   │   │   └── mainpage.dart
+│   │   ├── profile/           # Profile-related UI
+│   │   │   └── profile_screen.dart
+│   │   ├── search/            # Search user screen
+│   │   │   └── search_page.dart
+│   │   └── splashscreen.dart  # App launch splash screen
+│
+│   ├── video_call/            # WebRTC video calling logic and UI
+│   │   ├── video_call_screen.dart
+│   │   └── signaling.dart
+│
+│   ├── utils/                 # Reusable utilities and helpers
+│   │   ├── keyword_utils.dart
+│   │   └── custom_theme.dart
+│
+│   └── main.dart              # App entry point
+│
+├── assets/                    # Fonts, images, icons, etc.
+│   ├── images/
+│   └── logos/
+│
+├── pubspec.yaml               # Project dependencies and assets config
+└── README.md                  # Project overview and documentation
+
 
 --- 
 
