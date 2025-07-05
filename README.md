@@ -2,8 +2,12 @@
 <h1 align="center">ChatterCall 📞💬</h1>
 
 <p align="center">
-  A real-time audio/video calling web app built with Flutter and Firebase WebRTC.
+ ChatterCall is a modern, real-time communication app built using Flutter, Firebase, and WebRTC, offering a seamless experience for both audio/video calling and text-based chatting. Designed with a clean, dark-themed UI, the app allows users to register via phone or email authentication, initiate secure one-on-one conversations, and stay connected through smooth video calls or engaging chat sessions. Powered by Firebase for authentication, Firestore for data management, and WebRTC for media streaming, ChatterCall brings together reliable backend services with a visually intuitive frontend for a complete communication solution that works across web and mobile platforms.
+
 </p>
+
+
+
 
 ---
 
@@ -18,6 +22,23 @@
 </p>
 
 ---
+
+
+<h2 align="center">📸 Screenshots</h2>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/cfaa9cb1-4ea7-47c1-acfd-4da64bd6e606" alt="Chatroom Screen" width="300"/>
+</p>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/3cad62bb-cab9-41be-aad4-7f2817cae4a5" alt="Signup Screen" width="300"/>
+</p>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e8368128-af70-47dc-a960-d7ba120b0604" alt="Auth Flow" width="300"/>
+</p>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/6ac1c988-d695-48f6-a2ab-18175ee35997" alt="Home Screen" width="300"/>
+</p>
+
 
 ## 🧩 Features
 
