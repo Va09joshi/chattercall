@@ -97,14 +97,13 @@ flutter pub get
 ```
 
 3. Configure Firebase
-```bash
 <ul>
 <li>Create a Firebase project</li>
 <li>Add google-services.json and GoogleService-Info.plist</li>
 <li>Enable Authentication (Phone/Email) and Firestore</li>
 </ul>
 
-```
+
 
 4. Run the app
 ```bash
