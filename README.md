@@ -54,30 +54,43 @@
 
 --- 
 
-<h3>## 🛠️ Setup Instructions</h3>
+## 🛠️ Setup Instructions
 
-<h4>### 1. Clone the repository</h4>
+### 1. Clone the repository
 ```bash
 git clone https://github.com/Va09joshi/chattercall.git
 cd chattercall
 ```
-<h4>2. Install Flutter dependencies</h4>
+2. Install Flutter dependencies
 
 ```bash
 flutter pub get
 ```
 
-<h4>3. Configure Firebase</h4>
+3. Configure Firebase
 
 <li>Create a Firebase project</li>
 <li>Add google-services.json and GoogleService-Info.plist</li>
 <li>Enable Authentication (Phone/Email) and Firestore</li>
 
-
-
-<h4>4. Run the app</h4>
+4. Run the app
 ```bash
 
 flutter run -d chrome      # for web
 flutter run -d android     # for mobile
 ```
+
+<h3>🧠 Future Enhancements</h3>
+<li>🔔 Push call notifications</li>
+<li>🌍 Group calling support</li>
+<li>📊 Call logs and history</li>
+<li>📱 iOS compatibility & iPad layout</li>
+
+<h3>🤝 Contributing</h3>
+1. Fork the repo
+
+2. Create a branch (feature/your-feature)
+
+3. Commit changes
+
+4. Open a Pull Request
