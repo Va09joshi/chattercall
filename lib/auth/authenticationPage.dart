@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class AuthenticationPage extends  {
+class AuthenticationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
@@ -13,10 +13,13 @@ class AuthenticationPage extends  {
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xfff5f7fa), Color(0xffc3cfe2)],
-            begin: Alignment.bottomCenter,
-            end: Alignment.topLeft,
+          gradient: LinearGradient(colors: [
+            Color(0xff09203f),
+            Color(0xff537895),
+            Color(0xff09203f)
+
+          ],begin: Alignment(0, 5),
+              end: Alignment(5, 0)
           ),
         ),
         child: Center(
@@ -24,7 +27,7 @@ class AuthenticationPage extends  {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: 360,
+                maxWidth: 700,
               ),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
@@ -43,26 +46,29 @@ class AuthenticationPage extends  {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Image.asset(
-                      'assets/images/voice-mail.png',
-                      height: 80,
+                      'assets/images/communication.png',
+                      height: 60,
                     ),
 
                     Text(
                       'ChatterCall',
-                      style: GoogleFonts.lato(
-                        fontSize: 18,
+                      style: GoogleFonts.getFont("Jost",
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade900,
+                        color: Colors.blue.shade700,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
+                     Text("Please login or signup to continue",style: GoogleFonts.getFont("Lato",fontSize: 14),),
+                     SizedBox(height: 40,),
+                    
                     Uidesign().gradientButton(
                       label: 'Sign In',
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => Signinpage()),
                       ),
-                      gradient: [Colors.blue.shade900, Colors.blue],
+                      gradient: [Color(0xff09203f),Color(0xff537895)],
                       icon: Icons.login,
                       height: 48,
                       borderRadius: 12,
@@ -74,7 +80,7 @@ class AuthenticationPage extends  {
                         context,
                         MaterialPageRoute(builder: (_) => SignUppage()),
                       ),
-                      gradient: [Colors.blue, Colors.blue.shade900],
+                      gradient: [Color(0xff09203f),Color(0xff537895)],
                       icon: Icons.person_add,
                       height: 48,
                       borderRadius: 12,
@@ -85,7 +91,7 @@ class AuthenticationPage extends  {
                     Uidesign().gradientButton(
                       label: 'Continue with Google',
                       onTap: () {},
-                      gradient: [Colors.orange, Colors.red.shade700],
+                      gradient: [ Colors.red.shade300,Colors.orange,Colors.orange,Colors.red.shade300],
                       icon: FontAwesomeIcons.google,
                       height: 48,
                       borderRadius: 12,

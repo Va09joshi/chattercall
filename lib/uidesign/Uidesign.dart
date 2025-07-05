@@ -2,6 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class Uidesign {
 
@@ -37,7 +38,7 @@ class Uidesign {
         decoration: InputDecoration(
           label: Text(label, style: TextStyle(color: Colors.black),),
           hintText: hinttext,
-          prefixIcon: Icon(icon, color: Colors.blue,),
+          prefixIcon: Icon(icon, color: Color(0xff537895),),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(color: Colors.black54, width: 2),
@@ -95,7 +96,7 @@ class Uidesign {
                 ],
                 Text(
                   label,
-                  style: const TextStyle(
+                  style:  GoogleFonts.getFont("Lato",
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

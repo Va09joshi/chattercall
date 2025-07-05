@@ -1,20 +1,31 @@
-class ChatRoomModel{
-
+class ChatRoomModel {
   String? chatroomid;
-  List<String>? participates;
+  String? lastmessage;
+  Map<String, bool>? participants;
+  DateTime? updatedOn;
 
+  ChatRoomModel({
+    this.chatroomid,
+    this.lastmessage,
+    this.participants,
+    this.updatedOn,
+  });
 
-  ChatRoomModel({this.chatroomid,this.participates});
-
-  ChatRoomModel.frommap(Map<String,dynamic> map){
-    chatroomid : map['chatroomid'];
-    participates : map['participates'];
+  Map<String, dynamic> toMap() {
+    return {
+      'chatroomid': chatroomid,
+      'lastmessage': lastmessage,
+      'participants': participants,
+      'updatedon': updatedOn, // ✅ this must be here
+    };
   }
 
-  Map<String,dynamic> ToMap(){
-    return {
-      "chatroomid" : chatroomid,
-      "participates" : participates
-    };
+  factory ChatRoomModel.frommap(Map<String, dynamic> map) {
+    return ChatRoomModel(
+      chatroomid: map['chatroomid'],
+      lastmessage: map['lastmessage'],
+      participants: Map<String, bool>.from(map['participants']),
+      updatedOn: map['updatedon']?.toDate(), // ✅ important for DateTime conversion
+    );
   }
 }

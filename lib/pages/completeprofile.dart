@@ -1,31 +1,32 @@
-import 'dart:convert';                       // NEW
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:chat_application/models/Usermodel.dart';
-import 'package:chat_application/pages/HomePage.dart';
 import 'package:chat_application/pages/Mainpage/Mainpage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;      // NEW
+import 'package:http/http.dart' as http;
+
+// ‼️— unified URI —‼️
+import '../models/Usermodel.dart';
 
 import '../uidesign/Uidesign.dart';
+import '../keyword_utils.dart';   // buildSearchKeywords() & saveUser()
 
 class Completeprofile extends StatefulWidget {
-  final Usermodel? usermodel;
-  final User? firebaseuser;
+  final Usermodel usermodel;
+  final User firebaseuser;
 
   const Completeprofile({
-    super.key,
+    Key? key,
     required this.usermodel,
     required this.firebaseuser,
-  });
+  }) : super(key: key);
 
   @override
   State<Completeprofile> createState() => _CompleteprofileState();
@@ -33,55 +34,48 @@ class Completeprofile extends StatefulWidget {
 
 class _CompleteprofileState extends State<Completeprofile> {
   File? imagefile;
-  TextEditingController namecontroller = TextEditingController();
+  final TextEditingController namecontroller = TextEditingController();
+  bool isUploading = false;
 
-  /* ───────────────── image pick & crop ───────────────── */
+  /* ───── image pick & crop ───── */
 
-  void selectimage(ImageSource source) async {
-    final picked = await ImagePicker().pickImage(source: source);
-    if (picked != null) Cropimage(picked);
+  Future<void> selectImage(ImageSource src) async {
+    final picked = await ImagePicker().pickImage(source: src);
+    if (picked != null) _cropImage(picked);
   }
 
-  void Cropimage(XFile file) async {
+  Future<void> _cropImage(XFile file) async {
     final cropped = await ImageCropper().cropImage(
       sourcePath: file.path,
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      compressQuality: 21,
+      compressQuality: 75,
     );
-    if (cropped != null) {
-      setState(() => imagefile = File(cropped.path));
-    }
+    if (cropped != null) setState(() => imagefile = File(cropped.path));
   }
 
-  /* ───────────────── modal for camera / gallery ───────────────── */
-
-  void showphotoOptions() {
+  void _showPhotoOptions() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(
-          "Upload Profile Picture",
-          style: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        title: Text("Upload Profile Picture",
+            style: GoogleFonts.lato(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Divider(thickness: 2, height: 3),
-            const SizedBox(height: 11),
             ListTile(
-              leading: const Icon(Icons.photo, color: Colors.blue),
+              leading: const Icon(Icons.photo),
               title: const Text("Select from Gallery"),
               onTap: () {
                 Navigator.pop(context);
-                selectimage(ImageSource.gallery);
+                selectImage(ImageSource.gallery);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt_rounded, color: Colors.red),
+              leading: const Icon(Icons.camera_alt),
               title: const Text("Take a Photo"),
               onTap: () {
                 Navigator.pop(context);
-                selectimage(ImageSource.camera);
+                selectImage(ImageSource.camera);
               },
             ),
           ],
@@ -90,65 +84,66 @@ class _CompleteprofileState extends State<Completeprofile> {
     );
   }
 
-  /* ───────────────── validation ───────────────── */
+  /* ───── validation & upload ───── */
 
-  void checkvalues() {
-    final fullname = namecontroller.text.trim();
-    if (fullname.isEmpty || imagefile == null) {
+  void _checkValues() {
+    final fullName = namecontroller.text.trim();
+    if (fullName.isEmpty || imagefile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all the details")),
-      );
+          const SnackBar(content: Text("Please fill all the details")));
     } else {
-      log("uploading data…");
-      UploadData();
+      _uploadData(fullName);
     }
   }
 
-  /* ───────────────── upload to ImgBB & Firestore ───────────────── */
-
-  Future<void> UploadData() async {
+  Future<void> _uploadData(String fullName) async {
+    setState(() => isUploading = true);
     try {
       /* 1️⃣  Upload image to ImgBB */
-      const apiKey = 'a3148b0b120196e73402f12ce7eae950';               // <-- put your key here
+      const apiKey = 'a3148b0b120196e73402f12ce7eae950';
       final uri = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
-
-      final bytes = await imagefile!.readAsBytes();
-      final base64Img = base64Encode(bytes);
+      final base64Img = base64Encode(await imagefile!.readAsBytes());
 
       final res = await http.post(uri, body: {'image': base64Img});
-      if (res.statusCode != 200) {
-        throw ('ImgBB upload failed (${res.statusCode})');
-      }
-      final imageurl = jsonDecode(res.body)['data']['url'];
+      if (res.statusCode != 200) throw ('ImgBB upload failed');
 
-      /*  Save name + Img URL to Firestore */
-      final fullname = namecontroller.text.trim();
-      widget.usermodel!
-        ..fullname = fullname
-        ..profilepic = imageurl;
+      final imageUrl = jsonDecode(res.body)['data']['url'];
 
-      await FirebaseFirestore.instance
-          .collection("people")
-          .doc(widget.usermodel!.uid)
-          .set(widget.usermodel!.Tomap());
+      /* 2️⃣  Save to Firestore with searchKeywords */
+      await saveUser(
+        uid: widget.usermodel.uid!,
+        fullname: fullName,
+        email: widget.usermodel.email!,
+        profilePic: imageUrl,
+      );
 
-      log("data uploaded");
-      if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-          return MainPage(userModel: widget.usermodel,firebaseUser: widget.firebaseuser);
-      })); // back on success
-      }
+      // keep local model in sync
+      widget.usermodel
+        ..fullname = fullName
+        ..profilepic = imageUrl;
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MainPage(
+            userModel: widget.usermodel,
+            firebaseUser: widget.firebaseuser,
+          ),
+        ),
+      );
     } catch (e) {
       log('Upload error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
       }
+    } finally {
+      if (mounted) setState(() => isUploading = false);
     }
   }
 
-  /* ───────────────── UI ───────────────── */
+  /* ───── UI ───── */
 
   @override
   Widget build(BuildContext context) {
@@ -163,89 +158,68 @@ class _CompleteprofileState extends State<Completeprofile> {
         ),
         child: Center(
           child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Container(
-                  width: 300,
-                  height: 600,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black, offset: Offset(0, 4), blurRadius: 6),
-                      BoxShadow(color: Colors.grey, offset: Offset(0, 4), blurRadius: 10),
-                    ],
+            child: Container(
+              width: 300,
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(blurRadius: 6, offset: Offset(0, 4)),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Text("Complete Profile",
+                      style: GoogleFonts.lato(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  CupertinoButton(
+                    onPressed: _showPhotoOptions,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      radius: 70,
+                      backgroundImage:
+                      imagefile != null ? FileImage(imagefile!) : null,
+                      child: imagefile == null
+                          ? const Icon(Icons.account_circle,
+                          size: 150, color: Colors.black38)
+                          : null,
+                    ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Divider(thickness: 2,height: 1,),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                          colors: [Colors.blueGrey, Colors.blueAccent,Colors.blueAccent,Colors.blueGrey],
+                  const SizedBox(height: 20),
+                  Uidesign().customTextField(
+                    label: "Full name",
+                    hinttext: "Enter name here…",
+                    controller: namecontroller,
+                    icon: Icons.person,
+                  ),
+                  const SizedBox(height: 30),
+                  InkWell(
+                    onTap: isUploading ? null : _checkValues,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 200,
+                      height: 50,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.blueGrey, Colors.blueAccent],
                         ),
-                        ),
-                        width: 300 , height: 50,child: Center(child: Text("Login Your Account",style: GoogleFonts.getFont("Lato",fontWeight: FontWeight.bold,color: Colors.white,fontSize: 16),)),),
-                      Divider(thickness: 2,height: 1,),
-
-                      CupertinoButton(
-                        onPressed: showphotoOptions,
-                        child: CircleAvatar(
-                          backgroundColor: Colors.transparent,
-                          radius: 80,
-                          backgroundImage: imagefile != null ? FileImage(imagefile!) : null,
-                          child: imagefile == null
-                              ? const Icon(Icons.account_circle, size: 150, color: Colors.blue)
-                              : null,
-                        ),
-                      ),
-
-                      Text(
-                        "Complete Profile",
-                        style: GoogleFonts.lato(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: Colors.blue.shade900,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Uidesign().customTextField(
-                        label: "Full name",
-                        hinttext: "Enter name here…",
-                        controller: namecontroller,
-                        icon: Icons.people_alt_rounded,
-                      ),
-                      const SizedBox(height: 20),
-                      InkWell(
-                        onTap: checkvalues,
                         borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          width: 200,
-                          height: 50,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Colors.blueGrey, Colors.blueAccent,Colors.blueAccent,Colors.blueGrey],
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: const [BoxShadow(color: Colors.black)],
-                          ),
-                          child: const Text(
-                            "Submit",
-                            style: TextStyle(
+                        boxShadow: const [BoxShadow(color: Colors.black)],
+                      ),
+                      child: isUploading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text("Submit",
+                          style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 80),
-                    ],
+                              fontWeight: FontWeight.w600)),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -1,26 +1,41 @@
-import 'package:chat_application/models/Usermodel.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class MessageModel{
+class MessageModel {
+  String? messageid;
   String? sender;
   String? message;
   bool? seen;
-  DateTime? Createdon;
+  DateTime? createdon;
 
-  MessageModel({this.sender,this.message,this.Createdon,this.seen});
+  MessageModel({
+    this.messageid,
+    this.sender,
+    this.message,
+    this.seen,
+    this.createdon,
+  });
 
-  MessageModel.frommap(Map<String,dynamic> map){
-    sender : map['sender'];
-    message : map['message'];
-    seen : map['seen'];
-    Createdon : map['Createdon'];
+  // Convert Firestore Map to MessageModel object
+  factory MessageModel.frommap(Map<String, dynamic> map) {
+    return MessageModel(
+      messageid: map["messageid"],
+      sender: map["sender"],
+      message: map["message"],
+      seen: map["seen"],
+      createdon: map["createdon"] != null
+          ? (map["createdon"] as Timestamp).toDate()
+          : null,
+    );
   }
 
-  Map<String,dynamic> tomap(){
-    return{
-      'sender' : sender,
-      ' message' : message,
-      'seen' : seen,
-      'Createdon' : Createdon
+  // Convert MessageModel object to Firestore-compatible Map
+  Map<String, dynamic> toMap() {
+    return {
+      "messageid": messageid,
+      "sender": sender,
+      "message": message,
+      "seen": seen,
+      "createdon": createdon,
     };
   }
 }
