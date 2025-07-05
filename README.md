@@ -9,35 +9,25 @@
 
 
 
----
 
-## 🚀 Demo
-
-<!-- Replace these with actual screenshots -->
-<p align="center">
-  <img src="screenshots/home.png" alt="Home Screen" width="400"/>
-</p>
-<p align="center">
-  <img src="screenshots/call.png" alt="Call UI" width="400"/>
-</p>
-
----
 
 
 <h2 align="center">📸 Screenshots</h2>
 
+<!-- Row 1 -->
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/cfaa9cb1-4ea7-47c1-acfd-4da64bd6e606" alt="Chatroom Screen" width="300"/>
+  <img src="https://github.com/user-attachments/assets/cfaa9cb1-4ea7-47c1-acfd-4da64bd6e606" alt="Chatroom Screen" width="200"/>
+  &nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/3cad62bb-cab9-41be-aad4-7f2817cae4a5" alt="Signup Screen" width="200"/>
 </p>
+
+<!-- Row 2 -->
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/3cad62bb-cab9-41be-aad4-7f2817cae4a5" alt="Signup Screen" width="300"/>
+  <img src="https://github.com/user-attachments/assets/e8368128-af70-47dc-a960-d7ba120b0604" alt="Auth Flow" width="200"/>
+  &nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/6ac1c988-d695-48f6-a2ab-18175ee35997" alt="Home Screen" width="200"/>
 </p>
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/e8368128-af70-47dc-a960-d7ba120b0604" alt="Auth Flow" width="300"/>
-</p>
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/6ac1c988-d695-48f6-a2ab-18175ee35997" alt="Home Screen" width="300"/>
-</p>
+
 
 
 ## 🧩 Features
