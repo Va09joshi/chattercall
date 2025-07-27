@@ -1,19 +1,50 @@
 import 'package:chat_application/auth/authenticationPage.dart';
-import 'package:flutter/material.dart';
+import 'package:chat_application/models/Usermodel.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
-class ProfilePage extends StatelessWidget {
-  final String name;
-  final String email;
-  final String profileUrl;
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({Key? key}) : super(key: key);
 
-  const ProfilePage({
-    super.key,
-    required this.name,
-    required this.email,
-    required this.profileUrl,
-  });
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  Usermodel? currentUser;
+  String joinedDate = '';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserData();
+  }
+
+  Future<void> fetchUserData() async {
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (currentUserUid != null) {
+      // Fetch from Firestore
+      final doc = await FirebaseFirestore.instance.collection('people').doc(currentUserUid).get();
+
+      if (doc.exists) {
+        setState(() {
+          currentUser = Usermodel.fromMap(doc.data()!);
+        });
+      }
+
+      // Get joined date from Auth metadata
+      final creationTime = FirebaseAuth.instance.currentUser?.metadata.creationTime;
+      if (creationTime != null) {
+        setState(() {
+          joinedDate = DateFormat('MMMM yyyy').format(creationTime); // e.g., July 2025
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,199 +54,168 @@ class ProfilePage extends StatelessWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Profile",style: GoogleFonts.getFont("Lato",fontSize: 25),),
-
-            SizedBox(width:10,),
-            Image.asset("assets/images/communication.png",width: 30,),
-
+            Text("Profile", style: GoogleFonts.lato(fontSize: 25)),
+            const SizedBox(width: 10),
+            Image.asset("assets/images/communication.png", width: 30),
           ],
         ),
         automaticallyImplyLeading: false,
         centerTitle: true,
-        backgroundColor: Color(0xff09203f),
-        titleTextStyle: GoogleFonts.getFont(
-          "Lato",
+        backgroundColor: const Color(0xff09203f),
+        titleTextStyle: GoogleFonts.lato(
           fontWeight: FontWeight.bold,
           color: Colors.white,
           fontSize: 15,
         ),
         toolbarHeight: 60,
         elevation: 10,
-        shadowColor: Colors.black87,
+        shadowColor: Colors.white12,
       ),
-      body: Column(
-        children: [
-
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Stack(
+      body: currentUser == null
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+        child: Column(
+          children: [
+            /// Cover + Profile Image
+            Stack(
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 400,
-                  height: 200,
+                  height: 160,
+                  width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.blueGrey.shade900, Color(0xFF0D47A1)])
+                    gradient: LinearGradient(
+                      colors: [Colors.blueGrey.shade900, const Color(0xFF0D47A1)],
+                    ),
                   ),
                 ),
                 Positioned(
+                  top: 100,
                   left: 0,
                   right: 0,
-
-                  bottom: -50,
                   child: Center(
-                    child: ClipOval(
-                      child: Container(
-                        width: 150, // must be equal for perfect circle
-                        height: 150,
-                        color: Colors.grey[300], // optional background
-                        child: Image.network(
-                          profileUrl,
-                          fit: BoxFit.contain, // ensures the image fits inside the circle
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 60),
-                        ),
+                    child: Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          )
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: currentUser!.profilepic != null && currentUser!.profilepic!.isNotEmpty
+                            ? Image.network(
+                          currentUser!.profilepic!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.person, size: 60),
+                        )
+                            : const Icon(Icons.person, size: 60),
                       ),
                     ),
                   ),
-                )
-
-
+                ),
               ],
             ),
-          ),
-          SizedBox(height: 30),
-          // Profile Picture
+            const SizedBox(height: 80),
 
-
-          const SizedBox(height: 20),
-
-          // Name
-          Text(
-            name,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-
-          const SizedBox(height: 5),
-
-          // Email
-          Text(email, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-
-          const SizedBox(height: 30),
-
-
-          Divider(),
-          SizedBox(
-            height: 12,
-          ),
-          // Other options
-          Container(
-            width: 390,
-            height: 50,
-
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                Colors.blueGrey.shade900, Color(0xFF0D47A1)
-              ]),
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [BoxShadow(color: Colors.black26)],
+            /// Name + Email + More Info
+            Text(
+              currentUser!.fullname ?? "No Name",
+              style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            child: InkWell(
+            const SizedBox(height: 5),
+            Text(
+              currentUser!.email ?? "No Email",
+              style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Text("Joined: $joinedDate", style: TextStyle(color: Colors.grey[500])),
+            const SizedBox(height: 30),
+            Divider(),
+
+            /// Option Tiles
+            ProfileTile(
+              icon: Icons.edit,
+              label: "Edit Profile",
               onTap: () {},
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.edit, color: Colors.white),
-                  SizedBox(width: 6),
-                  Text(
-                    "Edit Profile",
-                    style: GoogleFonts.getFont(
-                      "Lato",
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+              gradientColors: [Colors.blueGrey.shade900, const Color(0xFF0D47A1)],
             ),
-          ),
-          SizedBox(
-            height: 11,
-          ),
-          Container(
-            width: 390,
-            height: 50,
-
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                Colors.blueGrey.shade900, Color(0xFF0D47A1)
-              ]),
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [BoxShadow(color: Colors.black26)],
-            ),
-            child: InkWell(
+            const SizedBox(height: 10),
+            ProfileTile(
+              icon: Icons.settings,
+              label: "Settings",
               onTap: () {},
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.settings, color: Colors.white),
-                  SizedBox(width: 6),
-                  Text(
-                    "Settings",
-                    style: GoogleFonts.getFont(
-                      "Lato",
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+              gradientColors: [Colors.blueGrey.shade900, const Color(0xFF0D47A1)],
             ),
-          ),
-          SizedBox(height: 11,),
-          Container(
-            width: 390,
-            height: 50,
-
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                Colors.red.shade900, Colors.red,Colors.red.shade900
-              ]),
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [BoxShadow(color: Colors.black26)],
-            ),
-            child: InkWell(
+            const SizedBox(height: 10),
+            ProfileTile(
+              icon: Icons.logout,
+              label: "Logout",
               onTap: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.popUntil(context, (route)=>
-                    route.isFirst
-                  );
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                    return AuthenticationPage();
-                  }));
+                await FirebaseAuth.instance.signOut();
+                Navigator.popUntil(context, (route) => route.isFirst);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) =>  AuthenticationPage()),
+                );
               },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.logout, color: Colors.white),
-                  SizedBox(width: 6),
-                  Text(
-                    "Logout",
-                    style: GoogleFonts.getFont(
-                      "Lato",
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              gradientColors: [Colors.red.shade900, Colors.red, Colors.red.shade900],
+            ),
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProfileTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final List<Color> gradientColors;
+
+  const ProfileTile({
+    Key? key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.gradientColors,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 380,
+      height: 50,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: gradientColors),
+        borderRadius: BorderRadius.circular(11),
+        boxShadow: [BoxShadow(color: Colors.black26)],
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.lato(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-
-
-        ],
+          ],
+        ),
       ),
     );
   }

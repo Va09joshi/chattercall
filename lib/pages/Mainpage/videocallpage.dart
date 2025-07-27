@@ -1,4 +1,7 @@
-// lib/video_call_screen.dart
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:async';
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,59 +9,41 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class RootScaffold extends StatelessWidget {
-  const RootScaffold({super.key});
-  @override
-  Widget build(BuildContext context) => const Scaffold(
-    backgroundColor: Colors.black,
+class VideoCallPage extends StatefulWidget {
+  const VideoCallPage({Key? key}) : super(key: key);
 
-    body: SafeArea(child: VideoCallScreen()),
-  );
+  @override
+  State<VideoCallPage> createState() => _VideoCallPageState();
 }
 
-class VideoCallScreen extends StatefulWidget {
-  const VideoCallScreen({super.key});
-  @override
-  State<VideoCallScreen> createState() => _VideoCallScreenState();
-}
+class _VideoCallPageState extends State<VideoCallPage> {
+  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
+  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
-class _VideoCallScreenState extends State<VideoCallScreen> {
-  /* ─────────── renderers & controllers ─────────── */
-  final _localRenderer  = RTCVideoRenderer();
-  final _remoteRenderer = RTCVideoRenderer();
+  MediaStream? _localStream;
+  RTCPeerConnection? _peerConnection;
+  final TextEditingController _roomIdController = TextEditingController();
+  bool _cameraEnabled = true;
+  bool _callEnded = false;
+  Duration _callDuration = Duration.zero;
+  Timer? _callTimer;
 
-  final _createCtrl = TextEditingController();
-  final _joinCtrl   = TextEditingController();
-
-  MediaStream?       _localStream;
-  RTCPeerConnection? _pc;
-  MediaStreamTrack?  _videoTrack;
-
-  CollectionReference? _callerCands;
-  CollectionReference? _calleeCands;
-  DocumentReference?   _roomDoc;
-
-  final _db = FirebaseFirestore.instance;
-  bool _camOn = true;
-  bool _micOn = true;
-
-  /* ─────────── lifecycle ─────────── */
   @override
   void initState() {
     super.initState();
-    _initRenderers();
-    _ensurePermissionsAndOpenCam();
+    _initializeEverything();
   }
 
-  @override
-  void dispose() {
-    _localRenderer.dispose();
-    _remoteRenderer.dispose();
-    _createCtrl.dispose();
-    _joinCtrl.dispose();
-    _pc?.dispose();
-    _localStream?.dispose();
-    super.dispose();
+  Future<void> _initializeEverything() async {
+    await _initRenderers();
+    final permissionGranted = await _requestPermissions();
+    if (permissionGranted) {
+      await _openUserMedia();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Camera and Microphone permission denied")),
+      );
+    }
   }
 
   Future<void> _initRenderers() async {
@@ -66,222 +51,279 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     await _remoteRenderer.initialize();
   }
 
-  /* ─────────── permissions & local camera ─────────── */
-  Future<void> _ensurePermissionsAndOpenCam() async {
+  Future<bool> _requestPermissions() async {
     final statuses = await [
       Permission.camera,
       Permission.microphone,
     ].request();
-
-    if (statuses.values.any((s) => !s.isGranted)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Camera / Mic permission denied')),
-        );
-      }
-      return;
-    }
-    _openLocalCam();
+    return statuses[Permission.camera]!.isGranted && statuses[Permission.microphone]!.isGranted;
   }
 
-  Future<void> _openLocalCam() async {
-    try {
-      final stream = await navigator.mediaDevices.getUserMedia({
-        'audio': true,
-        'video': {'facingMode': 'user'},
-      });
-      _videoTrack             = stream.getVideoTracks().first;
-      _localRenderer.srcObject = stream;
-      setState(() => _localStream = stream);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open camera: $e')),
-        );
-      }
-    }
-  }
+  Future<void> _openUserMedia() async {
+    final stream = await navigator.mediaDevices.getUserMedia({
+      'video': {'facingMode': 'user'},
+      'audio': true,
+    });
 
-  /* ─────────── toggle helpers ─────────── */
-  Future<void> _toggleCam() async {
-    if (_videoTrack == null) return;
+    _localRenderer.srcObject = stream;
     setState(() {
-      _camOn = !_camOn;
-      _videoTrack!.enabled = _camOn;
+      _localStream = stream;
     });
   }
 
-  Future<void> _switchCam() async {
-    if (_videoTrack != null) await Helper.switchCamera(_videoTrack!);
-  }
-
-  /* ─────────── WebRTC core ─────────── */
-  Future<void> _createPeerConnection() async {
-    final pc = await createPeerConnection({
-      'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}],
-    });
-
-    _localStream?.getTracks().forEach((t) => pc.addTrack(t, _localStream!));
-
-    pc.onIceCandidate = (c) async {
-      if (c == null) return;
-      final data = {
-        'candidate': c.candidate,
-        'sdpMid': c.sdpMid,
-        'sdpMLineIndex': c.sdpMLineIndex,
-      };
-      if (_callerCands != null) await _callerCands!.add(data);
-      if (_calleeCands != null) await _calleeCands!.add(data);
-    };
-
-    pc.onTrack = (e) async {
-      if (e.streams.isNotEmpty) {
-        _remoteRenderer.srcObject = e.streams[0];
-      } else {
-        final temp = await createLocalMediaStream('remote');
-        temp.addTrack(e.track);
-        _remoteRenderer.srcObject = temp;
-      }
-      setState(() {});
-    };
-
-    _pc = pc;
-  }
-
-  /* ─────────── create room ─────────── */
   Future<void> _createRoom() async {
-    final room = _db.collection('rooms').doc();
-    _roomDoc     = room;
-    _callerCands = room.collection('callerCandidates');
+    final db = FirebaseFirestore.instance;
+    final roomRef = db.collection('rooms').doc();
+    _roomIdController.text = roomRef.id;
 
-    await _createPeerConnection();
+    _peerConnection = await _createPeerConnection();
 
-    _createCtrl.text = room.id;            // show ID immediately
-    final offer = await _pc!.createOffer();
-    await _pc!.setLocalDescription(offer);
-    await room.set({'offer': {'type': offer.type, 'sdp': offer.sdp}});
-
-    // listen for answer
-    room.snapshots().listen((snap) async {
-      final data = snap.data();
-      if (data?['answer'] == null) return;
-      final ans = data!['answer'];
-      await _pc!.setRemoteDescription(
-          RTCSessionDescription(ans['sdp'], ans['type']));
+    _localStream?.getTracks().forEach((track) {
+      _peerConnection?.addTrack(track, _localStream!);
     });
 
-    // callee ICE
-    room.collection('calleeCandidates').snapshots().listen((s) {
-      for (var c in s.docChanges) {
-        if (c.type != DocumentChangeType.added) continue;
-        final d = c.doc.data()!;
-        _pc!.addCandidate(
-            RTCIceCandidate(d['candidate'], d['sdpMid'], d['sdpMLineIndex']));
+    _peerConnection!.onTrack = (RTCTrackEvent event) {
+      if (event.track.kind == 'video' && event.streams.isNotEmpty) {
+        setState(() {
+          _remoteRenderer.srcObject = event.streams[0];
+        });
+      }
+    };
+
+    RTCSessionDescription offer = await _peerConnection!.createOffer();
+    await _peerConnection!.setLocalDescription(offer);
+    await roomRef.set({'offer': offer.toMap()});
+
+    _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
+      roomRef.collection('callerCandidates').add(candidate.toMap());
+    };
+
+    roomRef.snapshots().listen((snapshot) async {
+      final data = snapshot.data();
+      if (data != null && data.containsKey('answer')) {
+        final answer = data['answer'];
+        final desc = RTCSessionDescription(answer['sdp'], answer['type']);
+        await _peerConnection!.setRemoteDescription(desc);
       }
     });
+
+    roomRef.collection('calleeCandidates').snapshots().listen((snapshot) {
+      for (final change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final data = change.doc.data();
+          _peerConnection?.addCandidate(RTCIceCandidate(
+            data?['candidate'],
+            data?['sdpMid'],
+            data?['sdpMLineIndex'],
+          ));
+        }
+      }
+    });
+
+    _startCallTimer();
   }
 
-  /* ─────────── join room ─────────── */
   Future<void> _joinRoom() async {
-    final id = _joinCtrl.text.trim();
-    if (id.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Enter a Room ID first')));
-      return;
-    }
+    final roomId = _roomIdController.text.trim();
+    if (roomId.isEmpty) return;
 
-    final room = _db.collection('rooms').doc(id);
-    final snap = await room.get();
-    if (!snap.exists || (snap.data()?['offer'] == null)) {
+    final db = FirebaseFirestore.instance;
+    final roomRef = db.collection('rooms').doc(roomId);
+    final snapshot = await roomRef.get();
+
+    if (!snapshot.exists) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Room not found / no offer')));
+        const SnackBar(content: Text("Room not found")),
+      );
       return;
     }
 
-    _roomDoc    = room;
-    _calleeCands = room.collection('calleeCandidates');
-    await _createPeerConnection();
+    _peerConnection = await _createPeerConnection();
 
-    final offer = snap.data()!['offer'];
-    await _pc!.setRemoteDescription(
-        RTCSessionDescription(offer['sdp'], offer['type']));
+    _localStream?.getTracks().forEach((track) {
+      _peerConnection?.addTrack(track, _localStream!);
+    });
 
-    final answer = await _pc!.createAnswer();
-    await _pc!.setLocalDescription(answer);
-    await room.update({'answer': {'type': answer.type, 'sdp': answer.sdp}});
-
-    room.collection('callerCandidates').snapshots().listen((s) {
-      for (var c in s.docChanges) {
-        if (c.type != DocumentChangeType.added) continue;
-        final d = c.doc.data()!;
-        _pc!.addCandidate(
-            RTCIceCandidate(d['candidate'], d['sdpMid'], d['sdpMLineIndex']));
+    _peerConnection!.onTrack = (RTCTrackEvent event) {
+      if (event.track.kind == 'video' && event.streams.isNotEmpty) {
+        setState(() {
+          _remoteRenderer.srcObject = event.streams[0];
+        });
       }
+    };
+
+    final data = snapshot.data()!;
+    final offer = data['offer'];
+    await _peerConnection!.setRemoteDescription(
+      RTCSessionDescription(offer['sdp'], offer['type']),
+    );
+
+    final answer = await _peerConnection!.createAnswer();
+    await _peerConnection!.setLocalDescription(answer);
+
+    await roomRef.update({'answer': answer.toMap()});
+
+    _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
+      roomRef.collection('calleeCandidates').add(candidate.toMap());
+    };
+
+    roomRef.collection('callerCandidates').snapshots().listen((snapshot) {
+      for (final change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final data = change.doc.data();
+          _peerConnection?.addCandidate(RTCIceCandidate(
+            data?['candidate'],
+            data?['sdpMid'],
+            data?['sdpMLineIndex'],
+          ));
+        }
+      }
+    });
+
+    _startCallTimer();
+  }
+
+  void _startCallTimer() {
+    _callDuration = Duration.zero;
+    _callTimer?.cancel();
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _callDuration += const Duration(seconds: 1);
+      });
     });
   }
 
-  /* ─────────── end call ─────────── */
-  void _endCall() {
-    _localRenderer.srcObject  = null;
+  Future<RTCPeerConnection> _createPeerConnection() async {
+    final pc = await createPeerConnection({
+      'iceServers': [
+        {'urls': 'stun:stun.l.google.com:19302'},
+      ],
+    });
+
+    return pc;
+  }
+
+  void _toggleCamera() {
+    if (_localStream != null) {
+      for (var track in _localStream!.getVideoTracks()) {
+        track.enabled = !_cameraEnabled;
+      }
+      setState(() {
+        _cameraEnabled = !_cameraEnabled;
+      });
+    }
+  }
+
+  Future<void> _endCall() async {
+    _callTimer?.cancel();
+    await _peerConnection?.close();
+    await _peerConnection?.dispose();
+    _peerConnection = null;
+
+    if (_localStream != null) {
+      for (var track in _localStream!.getTracks()) {
+        track.stop();
+      }
+      await _localStream?.dispose();
+      _localStream = null;
+    }
+
+    _localRenderer.srcObject = null;
     _remoteRenderer.srcObject = null;
-    _localStream?.getTracks().forEach((t) => t.stop());
-    _pc?.close();
+    _roomIdController.clear();
 
     setState(() {
-      _pc           = null;
-      _callerCands  = null;
-      _calleeCands  = null;
-      _roomDoc      = null;
-      _createCtrl.clear();
-      _joinCtrl.clear();
-      _camOn = true;
-      _micOn = true;
+      _callEnded = true;
     });
-
-    _openLocalCam();
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Call ended')));
   }
 
-  /* ─────────── UI helpers ─────────── */
-  InputDecoration _field(String lbl) => InputDecoration(
-    labelText : lbl,
-    labelStyle: const TextStyle(color: Colors.black),
-    filled    : true,
-    fillColor : Colors.white,
-    border    : OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-  );
+  @override
+  void dispose() {
+    _callTimer?.cancel();
+    _localRenderer.dispose();
+    _remoteRenderer.dispose();
+    _peerConnection?.dispose();
+    _localStream?.dispose();
+    _roomIdController.dispose();
+    super.dispose();
+  }
 
-  Widget _iconBtn(IconData i, VoidCallback onTap, {Color? bg}) => Ink(
-    decoration:
-    ShapeDecoration(color: bg ?? Colors.blueGrey.shade700, shape: const CircleBorder()),
-    child: IconButton(icon: Icon(i, color: Colors.white), onPressed: onTap, splashRadius: 24),
+  Widget _buildVideoView(String label, RTCVideoRenderer renderer) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.getFont("Lato", fontWeight: FontWeight.w600, fontSize: 16)),
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          height: 200,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.black,
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: renderer.srcObject != null
+                      ? BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
+                    child: RTCVideoView(renderer, mirror: label == "Local View"),
+                  )
+                      : Center(child: Text("Waiting for video...", style: GoogleFonts.getFont("Lato", color: Colors.white))),
+                ),
+              ),
+              if (_callDuration.inSeconds > 0 && label == "Local View")
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "${_callDuration.inMinutes.toString().padLeft(2, '0')}:${(_callDuration.inSeconds % 60).toString().padLeft(2, '0')}",
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-  );
-
-
-
-
-
-
-  /* ─────────── build ─────────── */
   @override
   Widget build(BuildContext context) {
+    if (_callEnded) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            "You left the call",
+            style: GoogleFonts.lato(fontSize: 24, color: Colors.white),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Video Calls",style: GoogleFonts.getFont("Lato",fontSize: 25),),
-
-            SizedBox(width:10,),
-            Image.asset("assets/images/communication.png",width: 30,),
-
+            Text("VideoCalls", style: GoogleFonts.getFont("Lato", fontSize: 25)),
+            const SizedBox(width: 10),
+            Image.asset("assets/images/communication.png", width: 30),
           ],
         ),
         automaticallyImplyLeading: false,
         centerTitle: true,
-        backgroundColor: Color(0xff09203f),
+        backgroundColor: const Color(0xff09203f),
         titleTextStyle: GoogleFonts.getFont(
           "Lato",
           fontWeight: FontWeight.bold,
@@ -292,117 +334,96 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         elevation: 10,
         shadowColor: Colors.black87,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Top Section ───────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Row(children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _createCtrl,
-                        readOnly: true,
-                        decoration: _field('Room ID (generated)'),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.copy, color: Colors.white),
-                      onPressed: () {
-                        if (_createCtrl.text.isEmpty) return;
-                        _joinCtrl.text = _createCtrl.text;
-                        Clipboard.setData(
-                            ClipboardData(text: _createCtrl.text));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('ID copied')));
-                      },
-                    ),
-                    const SizedBox(width: 6),
-
-                  ]),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _joinCtrl,
-                        decoration: _field('Enter Room ID'),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-
-                  ]),
-                ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildVideoView("Local View", _localRenderer),
+              _buildVideoView("Remote View", _remoteRenderer),
+              TextField(
+                controller: _roomIdController,
+                decoration: InputDecoration(
+                  labelText: "Room ID",
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black45),
+                  ),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.copy),
+                    onPressed: () {
+                      Clipboard.setData(
+                        ClipboardData(text: _roomIdController.text),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Room ID copied!")),
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-
-            // ── Video Panes ───────────────────────────────────────────────────
-            Expanded(
-              child: Column(
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
+                  ElevatedButton.icon(
+                    onPressed: _createRoom,
+                    icon: const Icon(Icons.video_camera_front, color: Colors.white),
+                    label: const Text("Create Room", style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.lightBlue.shade900,
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: _remoteRenderer.srcObject == null
-                          ? const Center(
-                          child: Text('Waiting for remote…',
-                              style: TextStyle(color: Colors.white70)))
-                          : RTCVideoView(_remoteRenderer,
-                          objectFit: RTCVideoViewObjectFit
-                              .RTCVideoViewObjectFitCover),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                   ),
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
+                  ElevatedButton.icon(
+                    onPressed: _joinRoom,
+                    icon: Icon(Icons.group_add, color: Colors.blue.shade900),
+                    label: Text("Join Room", style: TextStyle(color: Colors.blue.shade900)),
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: _localRenderer.srcObject == null
-                          ? const Center(
-                          child: Text('Opening camera…',
-                              style: TextStyle(color: Colors.white70)))
-                          : RTCVideoView(_localRenderer,
-                          mirror: true,
-                          objectFit: RTCVideoViewObjectFit
-                              .RTCVideoViewObjectFitCover),
+                      side: BorderSide(color: Colors.blue.shade900),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                   ),
                 ],
               ),
-            ),
-
-            // ── Control Bar ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _iconBtn(
-                      _camOn ? Icons.videocam : Icons.videocam_off, _toggleCam),
-                  _iconBtn(Icons.cameraswitch, _switchCam),
-                  _iconBtn(_micOn ? Icons.mic : Icons.mic_off, () {
-                    setState(() {
-                      _micOn = !_micOn;
-                      _localStream?.getAudioTracks().forEach(
-                              (t) => t.enabled = _micOn);
-                    });
-                  }),
-                  _iconBtn(Icons.call_end, _endCall, bg: Colors.red),
+                  ElevatedButton.icon(
+                    onPressed: _toggleCamera,
+                    icon: const Icon(Icons.videocam_off, color: Colors.white),
+                    label: const Text("Toggle Camera", style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade800,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _endCall,
+                    icon: const Icon(Icons.call_end, color: Colors.white),
+                    label: const Text("End Call", style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade800,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

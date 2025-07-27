@@ -50,7 +50,7 @@ class _HomepageState extends State<Homepage> {
           color: Colors.white,
           fontSize: 15,
         ),
-        toolbarHeight: 60,
+        toolbarHeight: 90,
         elevation: 10,
         shadowColor: Colors.black87,
       ),
@@ -61,127 +61,127 @@ class _HomepageState extends State<Homepage> {
             children: [
               const SizedBox(height: 12),
 
-              // ───────────────────────────────────────── Header card
-              Center(
-                child: Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Container(
-                    width: 400,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2196F3), Color(0xFF0D47A1)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          flex: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            decoration: const BoxDecoration(
-                              color: Colors.black45,
-                              borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(20)),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                CircleAvatar(
-                                  radius: 30,
-                                  backgroundColor: Colors.transparent,
-                                  child: Icon(Icons.person,
-                                      size: 40, color: Colors.white),
-                                ),
-                                CircleAvatar(
-                                  radius: 30,
-                                  backgroundColor: Colors.white30,
-                                  child: Icon(Icons.video_camera_front,
-                                      size: 40, color: Colors.white),
-                                ),
-                                CircleAvatar(
-                                  radius: 30,
-                                  backgroundColor: Colors.transparent,
-                                  child: Icon(Icons.settings,
-                                      size: 40, color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Join with peoples and Talk',
-                                  style: GoogleFonts.getFont(
-                                    "Lato",
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  )),
-                              const SizedBox(height: 3),
-                              const Text('Connect instantly with others',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white70,
-                                  )),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              // // ───────────────────────────────────────── Header card
+              // Center(
+              //   child: Card(
+              //     elevation: 4,
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(20),
+              //     ),
+              //     child: Container(
+              //       width: 400,
+              //       height: 200,
+              //       decoration: BoxDecoration(
+              //         borderRadius: BorderRadius.circular(20),
+              //         gradient: const LinearGradient(
+              //           colors: [Color(0xFF2196F3), Color(0xFF0D47A1)],
+              //           begin: Alignment.topCenter,
+              //           end: Alignment.bottomCenter,
+              //         ),
+              //       ),
+              //       child: Column(
+              //         children: [
+              //           Expanded(
+              //             flex: 12,
+              //             child: Container(
+              //               padding: const EdgeInsets.symmetric(horizontal: 20),
+              //               decoration: const BoxDecoration(
+              //                 color: Colors.black45,
+              //                 borderRadius:
+              //                 BorderRadius.vertical(top: Radius.circular(20)),
+              //               ),
+              //               child: const Row(
+              //                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //                 children: [
+              //                   CircleAvatar(
+              //                     radius: 30,
+              //                     backgroundColor: Colors.transparent,
+              //                     child: Icon(Icons.person,
+              //                         size: 40, color: Colors.white),
+              //                   ),
+              //                   CircleAvatar(
+              //                     radius: 30,
+              //                     backgroundColor: Colors.white30,
+              //                     child: Icon(Icons.video_camera_front,
+              //                         size: 40, color: Colors.white),
+              //                   ),
+              //                   CircleAvatar(
+              //                     radius: 30,
+              //                     backgroundColor: Colors.transparent,
+              //                     child: Icon(Icons.settings,
+              //                         size: 40, color: Colors.white),
+              //                   ),
+              //                 ],
+              //               ),
+              //             ),
+              //           ),
+              //           Container(
+              //             width: double.infinity,
+              //             padding: const EdgeInsets.all(16),
+              //             child: Column(
+              //               crossAxisAlignment: CrossAxisAlignment.start,
+              //               children: [
+              //                 Text('Join with peoples and Talk',
+              //                     style: GoogleFonts.getFont(
+              //                       "Lato",
+              //                       fontSize: 18,
+              //                       fontWeight: FontWeight.bold,
+              //                       color: Colors.white,
+              //                     )),
+              //                 const SizedBox(height: 3),
+              //                 const Text('Connect instantly with others',
+              //                     style: TextStyle(
+              //                       fontSize: 14,
+              //                       color: Colors.white70,
+              //                     )),
+              //               ],
+              //             ),
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //   ),
+              // ),
 
-              const SizedBox(height: 11),
+              // const SizedBox(height: 11),
 
               // ───────────────────────────────────────── Chats label
-              Center(
-                child: Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Container(
-                    width: 400,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(11),
-                      gradient: const LinearGradient(
-                        colors: [Colors.blueAccent,Colors.blueAccent],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.chat, color: Colors.white),
-                        const SizedBox(width: 4),
-                        Center(
-                          child: Text("chats",
-                              style: GoogleFonts.getFont(
-                                "Lato",
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              )),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              // Center(
+              //   child: Card(
+              //     elevation: 4,
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(20),
+              //     ),
+              //     child: Container(
+              //       width: 400,
+              //       height: 50,
+              //       decoration: BoxDecoration(
+              //         borderRadius: BorderRadius.circular(11),
+              //         gradient: const LinearGradient(
+              //           colors: [Colors.white30,Colors.white30],
+              //           begin: Alignment.topCenter,
+              //           end: Alignment.bottomCenter,
+              //         ),
+              //       ),
+              //       child: Row(
+              //         mainAxisAlignment: MainAxisAlignment.center,
+              //         children: [
+              //           const Icon(Icons.chat, color: Colors.black),
+              //           const SizedBox(width: 4),
+              //           Center(
+              //             child: Text("chats",
+              //                 style: GoogleFonts.getFont(
+              //                   "Lato",
+              //                   fontSize: 24,
+              //                   fontWeight: FontWeight.bold,
+              //                   color: Colors.black,
+              //                 )),
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //   ),
+              // ),
 
               // ───────────────────────────────────────── Chatroom list
               Expanded(
@@ -231,7 +231,7 @@ class _HomepageState extends State<Homepage> {
                                   if (targetuser != null) {
                                     return Card(
                                       elevation: 12,
-                                      
+
                                       shadowColor: Colors.black45,
                                       child: Container(
                                         decoration: BoxDecoration(
@@ -270,7 +270,7 @@ class _HomepageState extends State<Homepage> {
                                   } else {
                                     // 👤 Show fallback ListTile even if user not found
                                     return ListTile(
-                                      
+
                                       leading: const CircleAvatar(
                                         backgroundColor: Colors.grey,
                                         child: Icon(Icons.person_outline),
@@ -304,7 +304,7 @@ class _HomepageState extends State<Homepage> {
               ),
 
               // ───────────────────────────────────────── Test button
-            
+
             ],
           ),
         ),

@@ -36,13 +36,8 @@ class _MainPageState extends State<MainPage> {
         firebaseuser: widget.firebaseUser,
       ),
       SearchPage(currentUser: widget.firebaseUser!),
-      const VideoCallScreen(),
-      const ProfilePage(
-        name: "Your name",
-        email: "xyz@gmail.com",
-        profileUrl:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMT4JKbsNzomQ38uf0_FL-d2rGZi7SwBLEhA&s",
-      ),
+       VideoCallPage(),
+       ProfilePage()
     ];
   }
 

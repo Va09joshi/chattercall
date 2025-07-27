@@ -1,12 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.chat_application">
 
-    <!-- Optional permissions (add as required) -->
-    <!-- <uses-permission android:name="android.permission.INTERNET" /> -->
+    <!-- Permissions for camera, microphone, and internet -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
 
     <application
-        android:name="${applicationName}"
-        android:label="chat_application"
+        android:label="Chat Application"
         android:icon="@mipmap/ic_launcher">
 
         <activity
@@ -19,7 +25,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- Splash screen theme before Flutter UI renders -->
+            <!-- Flutter splash theme -->
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
@@ -30,19 +36,19 @@
             </intent-filter>
         </activity>
 
-        <!-- Image cropping activity -->
+        <!-- If using uCrop or image cropping -->
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
-        <!-- Required Flutter embedding version -->
+        <!-- Flutter embedding version -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
 
-    <!-- Allow querying activities that can process text -->
+    <!-- Optional: query apps that handle text -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />

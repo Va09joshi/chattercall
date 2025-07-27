@@ -106,6 +106,89 @@ class _SearchPageState extends State<SearchPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               children: [
+                // // ───────────────────────────────────────── Header card
+                Center(
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Container(
+                      width: 400,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2196F3), Color(0xFF0D47A1)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            flex: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              decoration: const BoxDecoration(
+                                color: Colors.black45,
+                                borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(20)),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 30,
+                                    backgroundColor: Colors.transparent,
+                                    child: Icon(Icons.person,
+                                        size: 40, color: Colors.white),
+                                  ),
+                                  CircleAvatar(
+                                    radius: 30,
+                                    backgroundColor: Colors.white30,
+                                    child: Icon(Icons.video_camera_front,
+                                        size: 40, color: Colors.white),
+                                  ),
+                                  CircleAvatar(
+                                    radius: 30,
+                                    backgroundColor: Colors.transparent,
+                                    child: Icon(Icons.settings,
+                                        size: 40, color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Join with peoples and Talk',
+                                    style: GoogleFonts.getFont(
+                                      "Lato",
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    )),
+                                const SizedBox(height: 3),
+                                const Text('Connect instantly with others',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    )),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // const SizedBox(height: 11),
                 SizedBox(height: 20),
 
                 TextField(
@@ -128,20 +211,19 @@ class _SearchPageState extends State<SearchPage> {
                   width: 160,
                   height: 50,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      bottomRight: Radius.circular(10),
+                    borderRadius: BorderRadius.circular(9
+
+
                     ),
                     color: Colors.black26,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black,
-                        spreadRadius: 0.3,
-                        blurRadius: 1,
+                        color: Colors.white30,
+                        spreadRadius: 0.1,
+
                       ),
                       BoxShadow(
-                        color: Colors.grey,
-                        spreadRadius: 0.3,
+                        color: Colors.blueGrey,
                         blurRadius: 1,
                       ),
                     ],

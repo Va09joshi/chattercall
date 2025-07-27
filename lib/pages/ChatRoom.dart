@@ -28,11 +28,8 @@ class Chatroom extends StatefulWidget {
 class _ChatroomState extends State<Chatroom> {
   final TextEditingController _messageCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
-  final uuid =  Uuid();
+  final uuid = Uuid();
 
-  /* ------------------------------------------------------------ *
-   *  SEND MESSAGE
-   * ------------------------------------------------------------ */
   Future<void> _sendMessage() async {
     final msg = _messageCtrl.text.trim();
     _messageCtrl.clear();
@@ -50,7 +47,6 @@ class _ChatroomState extends State<Chatroom> {
         .collection('chatrooms')
         .doc(widget.chatroom.chatroomid);
 
-    // Ensure the chatroom doc exists before we update it
     final roomSnap = await chatRef.get();
     if (!roomSnap.exists) {
       await chatRef.set({
@@ -64,36 +60,44 @@ class _ChatroomState extends State<Chatroom> {
       });
     }
 
-    // Save the message
     await chatRef
         .collection('messages')
         .doc(newMessage.messageid)
         .set(newMessage.toMap());
 
-    // Update chatroom’s last message
     await chatRef.update({
       'lastmessage': newMessage.message,
-      'updatedon'  : DateTime.now(),
+      'updatedon': DateTime.now(),
     });
 
-    // Optional: auto‑scroll to latest
     if (_scrollCtrl.hasClients) {
       _scrollCtrl.animateTo(
-        0, // because ListView is reversed
+        0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     }
     widget.chatroom.lastmessage = msg;
-    FirebaseFirestore.instance.collection("chatrooms").doc(widget.chatroom.chatroomid).set(widget.chatroom.toMap());
-
+    FirebaseFirestore.instance
+        .collection("chatrooms")
+        .doc(widget.chatroom.chatroomid)
+        .set(widget.chatroom.toMap());
 
     log('Message sent: ${newMessage.message}');
   }
 
-  /* ------------------------------------------------------------ *
-   *  CLEAN‑UP
-   * ------------------------------------------------------------ */
+  String _formatTimestamp(DateTime? dt) {
+    if (dt == null) return '';
+    final time = TimeOfDay.fromDateTime(dt);
+    final now = DateTime.now();
+    final date = dt.day == now.day &&
+        dt.month == now.month &&
+        dt.year == now.year
+        ? 'Today'
+        : '${dt.day}/${dt.month}/${dt.year}';
+    return '$date • ${time.format(context)}';
+  }
+
   @override
   void dispose() {
     _messageCtrl.dispose();
@@ -101,9 +105,6 @@ class _ChatroomState extends State<Chatroom> {
     super.dispose();
   }
 
-  /* ------------------------------------------------------------ *
-   *  UI
-   * ------------------------------------------------------------ */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,8 +115,7 @@ class _ChatroomState extends State<Chatroom> {
           children: [
             CircleAvatar(
               backgroundColor: Colors.white,
-              backgroundImage:
-              NetworkImage(widget.targetuser.profilepic ?? ''),
+              backgroundImage: NetworkImage(widget.targetuser.profilepic ?? ''),
             ),
             const SizedBox(width: 15),
             Text(widget.targetuser.fullname ?? ''),
@@ -128,16 +128,13 @@ class _ChatroomState extends State<Chatroom> {
           letterSpacing: .6,
         ),
         centerTitle: true,
-        elevation: 10,
+        elevation: 6,
         toolbarHeight: 60,
+        shadowColor: Colors.black,
       ),
-
-      /* ---------- BODY ---------- */
-      body:
-      SafeArea(
+      body: SafeArea(
         child: Column(
           children: [
-            /* ---------- MESSAGES LIST ---------- */
             Expanded(
               child: StreamBuilder(
                 stream: FirebaseFirestore.instance
@@ -158,6 +155,21 @@ class _ChatroomState extends State<Chatroom> {
                   }
 
                   final docs = snapshot.data!.docs;
+
+                  // Mark received messages as seen
+                  for (var doc in docs) {
+                    final msg = MessageModel.frommap(
+                        doc.data() as Map<String, dynamic>);
+                    if (msg.sender == widget.targetuser.uid && msg.seen!) {
+                      FirebaseFirestore.instance
+                          .collection('chatrooms')
+                          .doc(widget.chatroom.chatroomid)
+                          .collection('messages')
+                          .doc(msg.messageid)
+                          .update({'seen': true});
+                    }
+                  }
+
                   return ListView.builder(
                     controller: _scrollCtrl,
                     reverse: true,
@@ -177,11 +189,27 @@ class _ChatroomState extends State<Chatroom> {
                               vertical: 10, horizontal: 15),
                           decoration: BoxDecoration(
                             color: isMe
-                                ? Colors.teal.shade100
+                                ? Colors.teal.shade200
                                 : Colors.grey.shade300,
                             borderRadius: BorderRadius.circular(13),
                           ),
-                          child: Text(msg.message ?? ''),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                msg.message ?? '',
+                                style: GoogleFonts.manrope(fontSize: 15,fontWeight: FontWeight.w500),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatTimestamp(msg.createdon),
+                                style: GoogleFonts.manrope(
+                                  fontSize: 10,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -189,11 +217,18 @@ class _ChatroomState extends State<Chatroom> {
                 },
               ),
             ),
-
-            /* ---------- INPUT BAR ---------- */
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-              color: Colors.grey.shade200,
+              width: 380,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(11),
+                color: Colors.grey.shade200,
+                boxShadow: [
+                  BoxShadow(color: Colors.black),
+                  BoxShadow(color: Colors.black)
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 8),
+              margin: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
                   Expanded(
