@@ -3,6 +3,7 @@ import 'package:chat_application/models/Usermodel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -140,23 +141,33 @@ class _ProfilePageState extends State<ProfilePage> {
             Divider(),
 
             /// Option Tiles
-            ProfileTile(
-              icon: Icons.edit,
+            ActionTile(
+              icon: FontAwesomeIcons.userPen,
               label: "Edit Profile",
+              textColor: Colors.black87,
               onTap: () {},
-              gradientColors: [Colors.blueGrey.shade900, const Color(0xFF0D47A1)],
+
             ),
             const SizedBox(height: 10),
-            ProfileTile(
-              icon: Icons.settings,
+            ActionTile(
+              icon: FontAwesomeIcons.gear,
               label: "Settings",
+              textColor: Colors.black87,
               onTap: () {},
-              gradientColors: [Colors.blueGrey.shade900, const Color(0xFF0D47A1)],
+
             ),
             const SizedBox(height: 10),
-            ProfileTile(
-              icon: Icons.logout,
+            ActionTile(
+              icon: FontAwesomeIcons.headset,
+              label: 'Help & Support',
+              onTap: () {},
+              textColor: Colors.black87,
+            ),
+            const SizedBox(height: 10),
+            ActionTile(
+              icon: FontAwesomeIcons.arrowRightFromBracket,
               label: "Logout",
+              textColor: Colors.red,
               onTap: () async {
                 await FirebaseAuth.instance.signOut();
                 Navigator.popUntil(context, (route) => route.isFirst);
@@ -165,9 +176,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   MaterialPageRoute(builder: (context) =>  AuthenticationPage()),
                 );
               },
-              gradientColors: [Colors.red.shade900, Colors.red, Colors.red.shade900],
+
             ),
-            const SizedBox(height: 30),
+
+
           ],
         ),
       ),
@@ -175,48 +187,64 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-class ProfileTile extends StatelessWidget {
+class ActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final List<Color> gradientColors;
+  final Color textColor;
 
-  const ProfileTile({
+  const ActionTile({
     Key? key,
     required this.icon,
     required this.label,
     required this.onTap,
-    required this.gradientColors,
+    required this.textColor,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 380,
-      height: 50,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradientColors),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(11),
-        boxShadow: [BoxShadow(color: Colors.black26)],
       ),
+      elevation: 6, // adds shadow
+      color: Colors.white,
+      shadowColor: Colors.black45,
       child: InkWell(
+        borderRadius: BorderRadius.circular(11),
         onTap: onTap,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.lato(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+        child: SizedBox(
+          height: 50,
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.all(14.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                 Row(
+                   children: [
+                     Icon(icon, color: textColor),
+                     const SizedBox(width: 15),
+                     Text(
+                       label,
+                       style: GoogleFonts.lato(
+                         fontSize: 17,
+                         fontWeight: FontWeight.w600,
+                         color: textColor,
+                       ),
+                     ),
+
+                   ],
+
+                 ),
+                Icon(FontAwesomeIcons.arrowRight,color: Colors.blueGrey,)
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
+

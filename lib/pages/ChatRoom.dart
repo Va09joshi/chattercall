@@ -6,6 +6,7 @@ import 'package:chat_application/models/Usermodel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
@@ -110,15 +111,27 @@ class _ChatroomState extends State<Chatroom> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black38,
+        automaticallyImplyLeading: false,
+        backgroundColor: Color(0xff243949),
         title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: NetworkImage(widget.targetuser.profilepic ?? ''),
+            Row(
+              children: [
+                IconButton(onPressed: (){
+                  Navigator.pop(context);
+                }, icon: Icon(Icons.arrow_left_sharp,color: Colors.white,size: 40,)),
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  backgroundImage: NetworkImage(widget.targetuser.profilepic ?? ''),
+                ),
+                const SizedBox(width: 15),
+                Text(widget.targetuser.fullname ?? ''),
+              ],
             ),
-            const SizedBox(width: 15),
-            Text(widget.targetuser.fullname ?? ''),
+
+            Icon(FontAwesomeIcons.ellipsisVertical,color: Colors.white,)
+
           ],
         ),
         titleTextStyle: GoogleFonts.manrope(

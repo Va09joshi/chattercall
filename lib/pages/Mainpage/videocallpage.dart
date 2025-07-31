@@ -56,7 +56,8 @@ class _VideoCallPageState extends State<VideoCallPage> {
       Permission.camera,
       Permission.microphone,
     ].request();
-    return statuses[Permission.camera]!.isGranted && statuses[Permission.microphone]!.isGranted;
+    return statuses[Permission.camera]!.isGranted &&
+        statuses[Permission.microphone]!.isGranted;
   }
 
   Future<void> _openUserMedia() async {
@@ -71,18 +72,14 @@ class _VideoCallPageState extends State<VideoCallPage> {
     });
   }
 
-  Future<void> _createRoom() async {
-    final db = FirebaseFirestore.instance;
-    final roomRef = db.collection('rooms').doc();
-    _roomIdController.text = roomRef.id;
-
-    _peerConnection = await _createPeerConnection();
-
-    _localStream?.getTracks().forEach((track) {
-      _peerConnection?.addTrack(track, _localStream!);
+  Future<RTCPeerConnection> _createPeerConnection() async {
+    final pc = await createPeerConnection({
+      'iceServers': [
+        {'urls': 'stun:stun.l.google.com:19302'},
+      ],
     });
 
-    _peerConnection!.onTrack = (RTCTrackEvent event) {
+    pc.onTrack = (event) {
       if (event.track.kind == 'video' && event.streams.isNotEmpty) {
         setState(() {
           _remoteRenderer.srcObject = event.streams[0];
@@ -90,13 +87,29 @@ class _VideoCallPageState extends State<VideoCallPage> {
       }
     };
 
-    RTCSessionDescription offer = await _peerConnection!.createOffer();
-    await _peerConnection!.setLocalDescription(offer);
-    await roomRef.set({'offer': offer.toMap()});
+    return pc;
+  }
+
+  Future<void> _createRoom() async {
+    final db = FirebaseFirestore.instance;
+    final roomRef = db.collection('rooms').doc();
+    _roomIdController.text = roomRef.id;
+
+    _peerConnection = await _createPeerConnection();
+
+    if (_localStream != null) {
+      for (var track in _localStream!.getTracks()) {
+        _peerConnection?.addTrack(track, _localStream!);
+      }
+    }
 
     _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
       roomRef.collection('callerCandidates').add(candidate.toMap());
     };
+
+    RTCSessionDescription offer = await _peerConnection!.createOffer();
+    await _peerConnection!.setLocalDescription(offer);
+    await roomRef.set({'offer': offer.toMap()});
 
     roomRef.snapshots().listen((snapshot) async {
       final data = snapshot.data();
@@ -111,11 +124,13 @@ class _VideoCallPageState extends State<VideoCallPage> {
       for (final change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data();
-          _peerConnection?.addCandidate(RTCIceCandidate(
-            data?['candidate'],
-            data?['sdpMid'],
-            data?['sdpMLineIndex'],
-          ));
+          if (data != null) {
+            _peerConnection?.addCandidate(RTCIceCandidate(
+              data['candidate'],
+              data['sdpMid'],
+              data['sdpMLineIndex'],
+            ));
+          }
         }
       }
     });
@@ -140,16 +155,14 @@ class _VideoCallPageState extends State<VideoCallPage> {
 
     _peerConnection = await _createPeerConnection();
 
-    _localStream?.getTracks().forEach((track) {
-      _peerConnection?.addTrack(track, _localStream!);
-    });
-
-    _peerConnection!.onTrack = (RTCTrackEvent event) {
-      if (event.track.kind == 'video' && event.streams.isNotEmpty) {
-        setState(() {
-          _remoteRenderer.srcObject = event.streams[0];
-        });
+    if (_localStream != null) {
+      for (var track in _localStream!.getTracks()) {
+        _peerConnection?.addTrack(track, _localStream!);
       }
+    }
+
+    _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
+      roomRef.collection('calleeCandidates').add(candidate.toMap());
     };
 
     final data = snapshot.data()!;
@@ -160,22 +173,19 @@ class _VideoCallPageState extends State<VideoCallPage> {
 
     final answer = await _peerConnection!.createAnswer();
     await _peerConnection!.setLocalDescription(answer);
-
     await roomRef.update({'answer': answer.toMap()});
-
-    _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
-      roomRef.collection('calleeCandidates').add(candidate.toMap());
-    };
 
     roomRef.collection('callerCandidates').snapshots().listen((snapshot) {
       for (final change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data();
-          _peerConnection?.addCandidate(RTCIceCandidate(
-            data?['candidate'],
-            data?['sdpMid'],
-            data?['sdpMLineIndex'],
-          ));
+          if (data != null) {
+            _peerConnection?.addCandidate(RTCIceCandidate(
+              data['candidate'],
+              data['sdpMid'],
+              data['sdpMLineIndex'],
+            ));
+          }
         }
       }
     });
@@ -191,16 +201,6 @@ class _VideoCallPageState extends State<VideoCallPage> {
         _callDuration += const Duration(seconds: 1);
       });
     });
-  }
-
-  Future<RTCPeerConnection> _createPeerConnection() async {
-    final pc = await createPeerConnection({
-      'iceServers': [
-        {'urls': 'stun:stun.l.google.com:19302'},
-      ],
-    });
-
-    return pc;
   }
 
   void _toggleCamera() {
@@ -252,7 +252,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.getFont("Lato", fontWeight: FontWeight.w600, fontSize: 16)),
+        Text(label, style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w600)),
         Container(
           margin: const EdgeInsets.symmetric(vertical: 8),
           height: 200,
@@ -271,7 +271,9 @@ class _VideoCallPageState extends State<VideoCallPage> {
                     filter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
                     child: RTCVideoView(renderer, mirror: label == "Local View"),
                   )
-                      : Center(child: Text("Waiting for video...", style: GoogleFonts.getFont("Lato", color: Colors.white))),
+                      : Center(
+                    child: Text("Waiting for video...", style: GoogleFonts.lato(color: Colors.white)),
+                  ),
                 ),
               ),
               if (_callDuration.inSeconds > 0 && label == "Local View")
@@ -316,7 +318,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("VideoCalls", style: GoogleFonts.getFont("Lato", fontSize: 25)),
+            Text("VideoCalls", style: GoogleFonts.lato(fontSize: 25,color: Colors.white,fontWeight: FontWeight.bold)),
             const SizedBox(width: 10),
             Image.asset("assets/images/communication.png", width: 30),
           ],
@@ -324,15 +326,8 @@ class _VideoCallPageState extends State<VideoCallPage> {
         automaticallyImplyLeading: false,
         centerTitle: true,
         backgroundColor: const Color(0xff09203f),
-        titleTextStyle: GoogleFonts.getFont(
-          "Lato",
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          fontSize: 15,
-        ),
         toolbarHeight: 60,
         elevation: 10,
-        shadowColor: Colors.black87,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -345,16 +340,11 @@ class _VideoCallPageState extends State<VideoCallPage> {
                 controller: _roomIdController,
                 decoration: InputDecoration(
                   labelText: "Room ID",
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black45),
-                  ),
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.copy),
                     onPressed: () {
-                      Clipboard.setData(
-                        ClipboardData(text: _roomIdController.text),
-                      );
+                      Clipboard.setData(ClipboardData(text: _roomIdController.text));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Room ID copied!")),
                       );
@@ -372,10 +362,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
                     label: const Text("Create Room", style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightBlue.shade900,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                   ElevatedButton.icon(
@@ -383,11 +370,8 @@ class _VideoCallPageState extends State<VideoCallPage> {
                     icon: Icon(Icons.group_add, color: Colors.blue.shade900),
                     label: Text("Join Room", style: TextStyle(color: Colors.blue.shade900)),
                     style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       side: BorderSide(color: Colors.blue.shade900),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                   ),
                 ],
@@ -402,10 +386,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
                     label: const Text("Toggle Camera", style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange.shade800,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                   ElevatedButton.icon(
@@ -414,10 +395,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
                     label: const Text("End Call", style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red.shade800,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ],
