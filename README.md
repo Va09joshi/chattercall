@@ -6,27 +6,53 @@
 
 </p>
 
-
-
-
-
-
-
 <h2 align="center">📸 Screenshots</h2>
 
 <!-- Row 1 -->
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/cfaa9cb1-4ea7-47c1-acfd-4da64bd6e606" alt="Chatroom Screen" width="200"/>
+  <img src="https://github.com/user-attachments/assets/cca49f75-fca2-43bf-ae6e-6015e701b335" alt="Screen 1" width="200"/>
   &nbsp;&nbsp;
-  <img src="https://github.com/user-attachments/assets/3cad62bb-cab9-41be-aad4-7f2817cae4a5" alt="Signup Screen" width="200"/>
+  <img src="https://github.com/user-attachments/assets/7a3ad33f-8b8e-4695-ad3f-a2db5cef07b1" alt="Screen 2" width="200"/>
 </p>
 
 <!-- Row 2 -->
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/e8368128-af70-47dc-a960-d7ba120b0604" alt="Auth Flow" width="200"/>
+  <img src="https://github.com/user-attachments/assets/785a6c70-23e2-4b82-9516-9dfd6d180ec1" alt="Screen 3" width="200"/>
   &nbsp;&nbsp;
-  <img src="https://github.com/user-attachments/assets/6ac1c988-d695-48f6-a2ab-18175ee35997" alt="Home Screen" width="200"/>
+  <img src="https://github.com/user-attachments/assets/b051425c-76d2-4308-8f37-74654ed23e6b" alt="Screen 4" width="200"/>
 </p>
+
+<!-- Row 3 -->
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/81d3638a-e97a-42fc-be76-1d1d155ceb55" alt="Screen 5" width="200"/>
+  &nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/a02e7197-1b8c-403b-a1ae-f7ce52cfac9f" alt="Screen 6" width="200"/>
+</p>
+
+<!-- Row 4 -->
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/6e993b5e-808b-44a9-a7b0-9b6fb6e83e9d" alt="Screen 7" width="200"/>
+  &nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/927fa90f-cde7-4153-b713-833426ddb913" alt="Screen 8" width="200"/>
+</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -139,3 +165,4 @@ flutter run -d android     # for mobile
 3. Commit changes
 
 4. Open a Pull Request
+
