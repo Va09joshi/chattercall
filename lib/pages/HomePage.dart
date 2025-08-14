@@ -33,6 +33,7 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       backgroundColor: Colors.white70,
       appBar: AppBar(
+
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
